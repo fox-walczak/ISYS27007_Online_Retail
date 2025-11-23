@@ -7,24 +7,12 @@ library("DataExplorer") # ""
 library("plotly")       # Widgets
 library("tidyverse")    # Core
 
-#packages <- c(
-#	"shiny", "bslib",            # Shiny
-#	"rsconnect",                 # Shinyapps.io
-#	"modeldata", "DataExplorer", # Modeling
-#	"plotly",                    # Widgets
-#	"tidyverse"                  # Core
-#)
-#
-#for(package in packages) {
-#  library(package, character.only=TRUE)
-#}
-
 # LOAD DATASETS
 
-#online_retail_file_path <- "OnlineRetail.csv"
-#online_retail <- read_csv(online_retail_file_path)
-#online_retail$date <- as.Date(online_retail$InvoiceDate, format="%m/%d/%Y %H:%M")
-#online_retail$date_time <- as_datetime(online_retail$InvoiceDate, format="%m/%d/%Y %H:%M")
+online_retail_file_path <- "OnlineRetail.csv"
+online_retail <- read_csv(online_retail_file_path)
+online_retail$date <- as.Date(online_retail$InvoiceDate, format="%m/%d/%Y %H:%M")
+online_retail$date_time <- as_datetime(online_retail$InvoiceDate, format="%m/%d/%Y %H:%M")
 
 # Filter by price less than or greater than 0
 
