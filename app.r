@@ -1,33 +1,19 @@
 # From https://youtu.be/jxsKUxkiaLI?si=bumTItsDcequcWRV
-load_pkg <- function(package_name) {
-  if (!require(package_name, character.only=TRUE)) {
-    install.packages(package_name,
-                     dependencies=TRUE)
-  }
-  else {
-    update.packages(ask=FALSE,
-                    checkBuilt=TRUE)
-  }
-  library(package_name, character.only=TRUE)
-}
-load_packages <- function(package_names) {
-  for(package_name in package_names) {
-    load_pkg(package_name)
-  }
-}
-# LIBRARIES
-
-load_packages(c(
+packages <- c(
 	"shiny", "bslib",            # Shiny
 	"rsconnect",                 # Shinyapps.io
 	"modeldata", "DataExplorer", # Modeling
 	"plotly",                    # Widgets
 	"tidyverse"                  # Core
-))
+)
+
+for(package in packages) {
+  library(package, character.only=TRUE)
+}
 
 # LOAD DATASETS
 
-#online_retail_file_path <- "C:\\Users\\artyp\\OneDrive - Nottingham Trent University\\Uni Vault\\ISYS27007_Business_Intelligence_&_Solutions\\_assets\\OnlineRetail.csv"
+#online_retail_file_path <- "OnlineRetail.csv"
 #online_retail <- read_csv(online_retail_file_path)
 #online_retail$date <- as.Date(online_retail$InvoiceDate, format="%m/%d/%Y %H:%M")
 #online_retail$date_time <- as_datetime(online_retail$InvoiceDate, format="%m/%d/%Y %H:%M")
