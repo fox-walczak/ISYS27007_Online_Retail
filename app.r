@@ -1,7 +1,7 @@
 # From https://youtu.be/jxsKUxkiaLI?si=bumTItsDcequcWRV
 packages <- c(
 	"shiny", "bslib",            # Shiny
-	"rsconnect",                 # Shinyapps.io
+	#"rsconnect",                 # Shinyapps.io
 	"modeldata", "DataExplorer", # Modeling
 	"plotly",                    # Widgets
 	"tidyverse"                  # Core
