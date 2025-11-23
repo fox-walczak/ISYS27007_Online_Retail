@@ -21,7 +21,8 @@ utils::data("stackoverflow", "car_prices", "Sacramento", package="modeldata")
 data_list = list(
   "StackOverflow"      = stackoverflow,
   "Car Prices"         = car_prices,
-  "Sacramento Housing" = Sacramento
+  "Sacramento Housing" = Sacramento,
+  "Online Retail"      = online_retail
 )
 
 # UI
@@ -38,7 +39,7 @@ ui <- navbarPage(
         shiny::selectInput(
           inputId = "dataset_choice",
           label   = "Data Connection",
-          choices = c("StackOverflow", "Car Prices", "Sacramento Housing")
+          choices = c("StackOverflow", "Car Prices", "Sacramento Housing", "Online Retail")
         ),
         hr(),
         h3("Apps by Business Science"),
@@ -74,6 +75,4 @@ server <- function(input, output) {
 
 # RUN
 
-#rsconnect::deployApp(appName="Online_Retail_Bulk_and_Promote_Dashboard", appTitle="Online Retail Bulk and Promote Dashboard")
 shinyApp(ui=ui, server=server)
-#shiny::runApp()
