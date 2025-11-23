@@ -7,24 +7,28 @@ library("DataExplorer") # ""
 library("plotly")       # Widgets
 library("tidyverse")    # Core
 
-# LOAD DATASETS
-
+# Load Data Set
 online_retail_file_path <- "OnlineRetail.csv"
 online_retail <- read_csv(online_retail_file_path)
+#Fix Date Format
 online_retail$date <- as.Date(online_retail$InvoiceDate, format="%m/%d/%Y %H:%M")
 online_retail$date_time <- as_datetime(online_retail$InvoiceDate, format="%m/%d/%Y %H:%M")
+# Calculate Invoice Amount
+online_retail$InvoiceAmount <- online_retail$Quantity * online_retail$UnitPrice
+# Split Costs and Revenue
+costs <- online_retail[online_retail$InvoiceAmount < 0,]
+revenue <- online_retail[online_retail$InvoiceAmount >= 0,]
 
-# Filter by price less than or greater than 0
+# Prepare Pie Chart
+countries <- unique(online_retail$Country)
+sum_by_country <- c()
+for(i in 1:length(countries)){
+  sum_by_country[i] <- sum(online_retail[online_retail$Country==countries[i],]$InvoiceAmount)
+}
+piec <- data.frame(countries, sum_by_country)
 
-utils::data("stackoverflow", "car_prices", "Sacramento", package="modeldata")
-
-data_list = list(
-  "StackOverflow"      = stackoverflow,
-  "Car Prices"         = car_prices,
-  "Sacramento Housing" = Sacramento,
-  "Online Retail"      = online_retail
-)
-
+min_date <- min(online_retail$date_time)
+max_date <- max(online_retail$date_time)
 # UI
 
 ui <- navbarPage(
@@ -39,7 +43,17 @@ ui <- navbarPage(
         shiny::selectInput(
           inputId = "dataset_choice",
           label   = "Data Connection",
-          choices = c("StackOverflow", "Car Prices", "Sacramento Housing", "Online Retail")
+          choices = c("Online Retail")
+        ),
+        shiny::sliderInput(
+          inputId="date_range",
+          label="Date Range",
+          min=min_date,
+          max=max_date,
+          value=c(min_date, max_date),
+          step=1,
+          ticks=TRUE,
+          dragRange=TRUE
         ),
         hr(),
         h3("Apps by Business Science"),
@@ -53,8 +67,14 @@ ui <- navbarPage(
           div(class="text-center")
       ),
       mainPanel(
-        h1("Correlation"),
-        plotlyOutput("corrplot",height=700)
+        h2("Revenue Over Time"),
+        plotOutput("revenue_over_time"),
+        h2("Costs Over Time"),
+        plotOutput("costs_over_time"),
+        h2("Revenue/Costs by Location"),
+        plotOutput("money_by_location"),
+        h2("Revenue by Country"),
+        plotOutput("revenue_by_country")
       )
     )
   )
@@ -63,14 +83,23 @@ ui <- navbarPage(
 # SERVER
 
 server <- function(input, output) {
-  rv <- reactiveValues()
-  observe({
-    rv$data_set <- data_list %>% pluck(input$dataset_choice)
+  #rv <- reactiveValues()
+  #observe({
+  #  rv$data_set <- data_list %>% pluck(input$dataset_choice)
+  #})
+  output$revenue_over_time <- renderPlot({
+    ggplot(revenue, mapping=aes(x=date_time,y=InvoiceAmount)) + geom_line()
   })
-  output$corrplot <- renderPlotly({
-    g <- DataExplorer::plot_correlation(rv$data_set)
-    plotly::ggplotly(g)
+  output$costs_over_time <- renderPlot({
+    ggplot(costs, mapping=aes(x=date_time,y=InvoiceAmount)) + geom_line()
   })
+  output$money_by_location <- renderPlot({
+    ggplot(online_retail, mapping=aes(x=date_time,y=InvoiceAmount,colour=Country)) + geom_line()
+  })
+  output$revenue_by_country <- renderPlot({
+    ggplot(piec, mapping=aes(x=countries, y=sum_by_country, fill=countries)) +
+      geom_bar(stat="identity", width=1)
+    })
 }
 
 # RUN
