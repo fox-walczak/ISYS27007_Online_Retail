@@ -1,15 +1,23 @@
 # From https://youtu.be/jxsKUxkiaLI?si=bumTItsDcequcWRV
-packages <- c(
-	"shiny", "bslib",            # Shiny
-	#"rsconnect",                 # Shinyapps.io
-	"modeldata", "DataExplorer", # Modeling
-	"plotly",                    # Widgets
-	"tidyverse"                  # Core
-)
+library("shiny")        # Shiny
+library("bslib")        # ""
+library("rsconnect")    # Shinyapps.io
+library("modeldata")    # Modeling
+library("DataExplorer") # ""
+library("plotly")       # Widgets
+library("tidyverse")    # Core
 
-for(package in packages) {
-  library(package, character.only=TRUE)
-}
+#packages <- c(
+#	"shiny", "bslib",            # Shiny
+#	"rsconnect",                 # Shinyapps.io
+#	"modeldata", "DataExplorer", # Modeling
+#	"plotly",                    # Widgets
+#	"tidyverse"                  # Core
+#)
+#
+#for(package in packages) {
+#  library(package, character.only=TRUE)
+#}
 
 # LOAD DATASETS
 
