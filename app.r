@@ -104,21 +104,21 @@ server <- function(input, output) {
     rv$max_date <- dplyr::pull(input, date_range[2])
   })
   observe({
-    # orf = online retail filtered
-      rv$orf <- online_retail %>% dplyr::filter(date >= rv$min_date &
-                                                  date <= rv$max_date)
+    # [O]nline [R]etail
+    rv$or <- online_retail %>% dplyr::filter(date >= rv$min_date &
+                                               date <= rv$max_date)
   })
   output$revenue_over_time <- renderPlot({
-    ggplot(get_revenue(rv$orf), mapping=aes(x=date_time,y=InvoiceAmount)) + geom_line()
+      ggplot(get_revenue(rv$or), mapping=aes(x=date_time,y=InvoiceAmount)) + geom_line()
   })
   output$costs_over_time <- renderPlot({
-    ggplot(get_costs(rv$orf), mapping=aes(x=date_time,y=InvoiceAmount)) + geom_line()
+    ggplot(get_costs(rv$or), mapping=aes(x=date_time,y=InvoiceAmount)) + geom_line()
   })
   output$money_by_location <- renderPlot({
-    ggplot(rv$orf, mapping=aes(x=date_time,y=InvoiceAmount,colour=Country)) + geom_line()
+    ggplot(rv$or, mapping=aes(x=date_time,y=InvoiceAmount,colour=Country)) + geom_line()
   })
   output$revenue_by_country <- renderPlot({
-    country_data_frame <- stats::aggregate(InvoiceAmount~Country, get_revenue(rv$orf), sum)
+    country_data_frame <- stats::aggregate(InvoiceAmount~Country, get_revenue(rv$or), sum)
     ggplot(country_data_frame, mapping=aes(x=countries, y=sum_by_country, fill=countries)) +
       geom_bar(stat="identity", width=1)
     })
