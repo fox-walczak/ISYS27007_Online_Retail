@@ -100,10 +100,6 @@ server <- function(input, output) {
     rv$or <- online_retail %>% dplyr::filter(InvoiceDate >= rv$min_date &
                                                InvoiceDate <= rv$max_date)
   })
-  observe({
-    rv$money_plot <- purrr::pluck(money_plots, money_plot_choices[sum(as.integer(input$money_plot_choice)) %% 3 + 1])
-  })
-  output$money_plot <- renderPlot({rv$money_plot})
   output$money <- shiny::renderText({
     paste(sum(as.integer(input$money_plot_choice)) %% 3 + 1,
           money_plot_choices[sum(as.integer(input$money_plot_choice)) %% 3 + 1])
@@ -122,32 +118,31 @@ server <- function(input, output) {
   
   # REVENUE / COST
   
-  output$revenue_over_time <- renderPlot({
-    ggplot(stats::aggregate(InvoiceAmount~InvoiceDate,filter_revenue(rv$or), sum),
+  money_plots <- list(
+    "revenue_over_time" = function(df){
+    ggplot(stats::aggregate(InvoiceAmount~InvoiceDate,filter_revenue(df), sum),
            mapping=aes(x=InvoiceDate,y=InvoiceAmount)) +
-      geom_line(colour="green")
-  })
-  output$costs_over_time <- renderPlot({
-    ggplot(stats::aggregate(InvoiceAmount~InvoiceDate,filter_cost(rv$or), sum),
+    geom_line(colour="green")
+    },
+    "costs_over_time" = function(df){
+    ggplot(stats::aggregate(InvoiceAmount~InvoiceDate,filter_cost(df), sum),
            mapping=aes(x=InvoiceDate,y=InvoiceAmount)) +
-      geom_line(colour="red")
-  })
-  output$money_over_time <- renderPlot({
-             #mutate(InvoiceAmount = dplyr::case_when(
-             #  InvoiceAmount < 0 ~ 0-InvoiceAmount,
-             #  InvoiceAmount >= 0 ~ InvoiceAmount)) %>%
-    stats::aggregate(InvoiceAmount~InvoiceDate+(InvoiceAmount<0), rv$or, sum) %>% ggplot(
-      #mapping=aes(x=InvoiceDate,y=InvoiceAmount)) +
+    geom_line(colour="red")
+    },
+    "money_over_time" = function(df) {
+    stats::aggregate(InvoiceAmount~InvoiceDate+(InvoiceAmount<0), df, sum) %>% ggplot(
       mapping=aes(x=InvoiceDate,y=abs(InvoiceAmount), colour=InvoiceAmount<0)) +
-      scale_colour_discrete(name="Key",labels=c("Revenue","Costs"), palette=c("green","red")) +
-      geom_line()
-    #ggplot(stats::aggregate(InvoiceAmount~InvoiceDate, rv$or, sum) %>%
-    #         mutate(InvoiceAmount = dplyr::case_when(
-    #           InvoiceAmount < 0 ~ 0-InvoiceAmount,
-    #           InvoiceAmount >= 0 ~ InvoiceAmount)),
-    #       mapping=aes(x=InvoiceDate,y=InvoiceAmount)) +
-    #       #mapping=aes(x=InvoiceDate,y=InvoiceAmount, colour=InvoiceAmount<0)) +
-    #  geom_line()
+    scale_colour_discrete(name="Key",labels=c("Revenue","Costs"), palette=c("green","red")) +
+    geom_line()
+    }
+  )
+  
+  observe({
+    rv$money_plot_choice <- money_plot_choices[sum(as.integer(input$money_plot_choice)) %% 3 + 1]
+    #rv$money_plot <- purrr::pluck(money_plot, money_plot_choices[sum(as.integer(input$money_plot_choice)) %% 3 + 1])
+  })
+  output$money_plot <- renderPlot({
+    purrr::pluck(money_plots, rv$money_plot_choice)(rv$or)
   })
   #output$money_by_location <- renderPlot({
   #  ggplot(rv$or, mapping=aes(x=date_time,y=InvoiceAmount,colour=Country)) + geom_line()
