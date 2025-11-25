@@ -41,12 +41,14 @@ ui <- shiny::navbarPage(
     title = "Dashboard",
     sidebarLayout(
       sidebarPanel(
+        h3("Filters"),
         width = 3,
-        h1("Explore a Dataset"),
-        shiny::selectInput(
-          inputId = "dataset_choice",
-          label   = "Data Connection",
-          choices = c("Online Retail")
+        shiny::checkboxGroupInput(
+          inputId = "money_plot_choice",
+          label   = "Show:",
+          choiceNames = c("Revenue", "Costs"),
+          choiceValues = c(1, 2),
+          selected = c(1, 2)
         ),
         shiny::sliderInput(
           inputId="date_range",
@@ -57,27 +59,27 @@ ui <- shiny::navbarPage(
           step=1,
           ticks=TRUE,
           dragRange=TRUE
-        ),
-        hr(),
-        h3("Apps by Business Science"),
-        p("Go from beginner to building full-stack shiny apps."),
-        p("Learn Shiny Today!") %>%
-          a(
-            href   = 'https://www.business-science.io/',
-            target = "_blank",
-            class  = "btn btn-lg btn-primary"
-          ) %>%
-          div(class="text-center")
+        )
       ),
       mainPanel(
-        h2("Revenue Over Time"),
-        plotOutput("revenue_over_time"),
-        h2("Costs Over Time"),
-        plotOutput("costs_over_time"),
-        h2("Revenue/Costs by Location"),
-        plotOutput("money_by_location"),
-        h2("Revenue by Country"),
-        plotOutput("revenue_by_country")
+        #textOutput("dates"),
+        #tableOutput("ort"),
+        #tableOutput("rvort"),
+        textOutput("money"),
+        
+        h2("Money Over Time"),
+        plotOutput("money_plot"),
+        #h2("Revenue Over Time"),
+        #plotOutput("revenue_over_time"),
+        #h2("Costs Over Time"),
+        #plotOutput("costs_over_time"),
+        #h2("Costs and Revenue Over Time"),
+        #plotOutput("money_over_time"),
+        
+        #h2("Revenue/Costs by Location"),
+        #plotOutput("money_by_location"),
+        #h2("Revenue by Country"),
+        #plotOutput("revenue_by_country")
       )
     )
   )
@@ -87,6 +89,7 @@ ui <- shiny::navbarPage(
 
 server <- function(input, output) {
   online_retail <- load_data()
+  money_plot_choices <- c("money_over_time","revenue_over_time","costs_over_time")
   rv <- reactiveValues()
   observe({
     rv$min_date <- input$date_range[1]
@@ -96,6 +99,14 @@ server <- function(input, output) {
     # [O]nline [R]etail
     rv$or <- online_retail %>% dplyr::filter(InvoiceDate >= rv$min_date &
                                                InvoiceDate <= rv$max_date)
+  })
+  observe({
+    rv$money_plot <- purrr::pluck(money_plots, money_plot_choices[sum(as.integer(input$money_plot_choice)) %% 3 + 1])
+  })
+  output$money_plot <- renderPlot({rv$money_plot})
+  output$money <- shiny::renderText({
+    paste(sum(as.integer(input$money_plot_choice)) %% 3 + 1,
+          money_plot_choices[sum(as.integer(input$money_plot_choice)) %% 3 + 1])
   })
   output$dates <- shiny::renderText({
     paste(rv$min_date, rv$max_date)
