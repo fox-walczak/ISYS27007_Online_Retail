@@ -88,7 +88,6 @@ ui <- shiny::navbarPage(
 # SERVER
 
 server <- function(input, output) {
-  online_retail <- load_data()
   money_plot_choices <- c("money_over_time","revenue_over_time","costs_over_time")
   rv <- reactiveValues()
   observe({
@@ -157,6 +156,7 @@ server <- function(input, output) {
   output$profit <- renderText({calculate_profit(rv$or)})
 }
 
-# RUN
+# ------- PROGRAM START -------
 
+online_retail <- load_data()
 shinyApp(ui=ui, server=server)
