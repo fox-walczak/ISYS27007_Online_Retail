@@ -4435,13 +4435,19 @@
   },
   "files": {
     ".RData": {
-      "checksum": "618eb54214e20101f052616faf31c336"
+      "checksum": "edca77c58f3d061743512e506baedcad"
     },
     "app.r": {
-      "checksum": "89c7b560d626807ec153267a01fb4b0f"
+      "checksum": "8444d819aad1e71dcc1db076d21340aa"
     },
     "OnlineRetail.csv": {
       "checksum": "5d295417e543b29d40366cd75fb4c75a"
+    },
+    "README.md": {
+      "checksum": "cea8251bdc115b5ba03923485ddfe30d"
+    },
+    "test.r": {
+      "checksum": "e44d6f9bbc8587706db6a9ccd9205cec"
     }
   },
   "users": null
