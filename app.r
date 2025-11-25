@@ -32,6 +32,12 @@ calculate_profit <- function(df){ return(sum(dplyr::pull(df,InvoiceAmount))) }
 min_date <- function(df) { return(min(dplyr::pull(df,InvoiceDate))) }
 max_date <- function(df) { return(max(dplyr::pull(df,InvoiceDate))) }
 
+
+
+online_retail <- load_data()
+
+
+
 # UI
 
 ui <- shiny::navbarPage(
@@ -158,5 +164,4 @@ server <- function(input, output) {
 
 # ------- PROGRAM START -------
 
-online_retail <- load_data()
 shinyApp(ui=ui, server=server)
