@@ -89,24 +89,10 @@ ui <- shiny::navbarPage(
         )
       ),
       mainPanel(
-        #textOutput("dates"),
-        #tableOutput("ort"),
-        #tableOutput("rvort"),
         textOutput("money"),
         
         h2("Money Over Time"),
         plotOutput("money_plot"),
-        #h2("Revenue Over Time"),
-        #plotOutput("revenue_over_time"),
-        #h2("Costs Over Time"),
-        #plotOutput("costs_over_time"),
-        #h2("Costs and Revenue Over Time"),
-        #plotOutput("money_over_time"),
-        
-        #h2("Revenue/Costs by Location"),
-        #plotOutput("money_by_location"),
-        #h2("Revenue by Country"),
-        #plotOutput("revenue_by_country")
       )
     )
   )
@@ -116,7 +102,6 @@ ui <- shiny::navbarPage(
 
 server <- function(input, output) {
   money_plot_choices <- c("money_over_time","revenue_over_time","costs_over_time")
-  rv <- reactiveValues()
   aggregate_functions <- list(
     "Sum" = sum,
     "Mean" = mean,
@@ -124,32 +109,13 @@ server <- function(input, output) {
     "Minimum" = min,
     "Maximum" = max
   )
+  rv <- reactiveValues()
   observe({
     rv$aggregate <- aggregate_functions[input$aggregate_function]
-  })
-  observe({
     rv$min_date <- input$date_range[1]
     rv$max_date <- input$date_range[2]
-  })
-  observe({
-    # [O]nline [R]etail
     rv$or <- online_retail %>% dplyr::filter(InvoiceDate >= rv$min_date &
                                                InvoiceDate <= rv$max_date)
-  })
-  output$money <- shiny::renderText({
-    paste(sum(as.integer(input$money_plot_choice)) %% 3 + 1,
-          money_plot_choices[sum(as.integer(input$money_plot_choice)) %% 3 + 1])
-  })
-  output$dates <- shiny::renderText({
-    paste(rv$min_date, rv$max_date)
-  })
-  output$ort <- shiny::renderTable({
-    as.data.frame(online_retail[1:10,])
-  })
-  output$rvort <- shiny::renderTable({
-    temp <- rv$or[1:10,]
-    temp$InvoiceDate <- format(temp$InvoiceDate)
-    as.data.frame(temp %>% dplyr::select(Description, InvoiceDate), stringsAsFactors=TRUE)
   })
   
   # REVENUE / COST
@@ -175,7 +141,6 @@ server <- function(input, output) {
   
   observe({
     rv$money_plot_choice <- money_plot_choices[sum(as.integer(input$money_plot_choice)) %% 3 + 1]
-    #rv$money_plot <- purrr::pluck(money_plot, money_plot_choices[sum(as.integer(input$money_plot_choice)) %% 3 + 1])
   })
   output$money_plot <- renderPlot({
     purrr::pluck(money_plots, rv$money_plot_choice)(rv$or)
