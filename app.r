@@ -56,10 +56,10 @@ online_retail <- load_data()
 # UI
 
 ui <- shiny::navbarPage(
-  title = "Bundle and Promote",
+  title = "Online Retail",
   theme = bslib::bs_theme(version=4,bootswatch="minty"),
   tabPanel(
-    title = "Dashboard",
+    title = "Bundle and Promote",
     sidebarLayout(
       sidebarPanel(
         h3("Filters"),
