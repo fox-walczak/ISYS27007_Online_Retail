@@ -83,9 +83,10 @@ ui <- shiny::navbarPage(
         )
       ),
       mainPanel(
-        textOutput("test"),
-        h2("Money Over Time"),
+        h2("Revenue/Costs Over Time"),
         plotOutput("money_plot"),
+        h2("Total Cashflow Over Time"),
+        plotOutput("cashflow_over_time"),
       )
     )
   )
@@ -143,6 +144,14 @@ server <- function(input, output) {
   })
   output$money_plot <- renderPlot({
     purrr::pluck(money_plots, rv$money_plot_choice)(rv$or)
+  })
+  cashflow_over_time = function(df) {
+    stats::aggregate(InvoiceAmount ~ InvoiceDate, df, rv$aggregate) %>%
+      ggplot(mapping=aes(x=InvoiceDate,y=InvoiceAmount)) +
+      geom_line()
+  }
+  output$cashflow_over_time <- renderPlot({
+    cashflow_over_time(rv$or)
   })
   #output$money_by_location <- renderPlot({
   #  ggplot(rv$or, mapping=aes(x=date_time,y=InvoiceAmount,colour=Country)) + geom_line()
