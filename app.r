@@ -14,8 +14,9 @@ load_data <- function() {
   online_retail$date_time <- lubridate::as_datetime(online_retail$InvoiceDate, format="%m/%d/%Y %H:%M")
   online_retail$InvoiceDate <- as.Date(online_retail$InvoiceDate, format="%m/%d/%Y %H:%M")
  
+  online_retail$InvoiceAmount <- online_retail$Quantity * online_retail$UnitPrice
   online_retail$is_cost <- online_retail$InvoiceAmount < 0
-  online_retail$InvoiceAmount <- abs(online_retail$Quantity * online_retail$UnitPrice)
+  online_retail$InvoiceAmount <- abs(online_retail$InvoiceAmount)
   
   return(online_retail)
 }
