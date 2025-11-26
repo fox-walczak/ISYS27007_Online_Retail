@@ -80,6 +80,12 @@ ui <- shiny::navbarPage(
           step=1,
           ticks=TRUE,
           dragRange=TRUE
+        ),
+        shiny::selectInput(
+          inputId="aggregate_function",
+          label="Aggregate Function:",
+          choices=c("Sum","Mean","Median","Minimum","Maximum"),
+          selected="Sum"
         )
       ),
       mainPanel(
@@ -111,6 +117,16 @@ ui <- shiny::navbarPage(
 server <- function(input, output) {
   money_plot_choices <- c("money_over_time","revenue_over_time","costs_over_time")
   rv <- reactiveValues()
+  aggregate_functions <- list(
+    "Sum" = sum,
+    "Mean" = mean,
+    "Median" = median,
+    "Minimum" = min,
+    "Maximum" = max
+  )
+  observe({
+    rv$aggregate <- aggregate_functions[input$aggregate_function]
+  })
   observe({
     rv$min_date <- input$date_range[1]
     rv$max_date <- input$date_range[2]
