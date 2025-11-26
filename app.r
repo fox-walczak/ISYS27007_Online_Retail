@@ -6,6 +6,7 @@ library("modeldata")    # Modeling
 library("DataExplorer") # ""
 library("plotly")       # Widgets
 library("tidyverse")    # Core
+library("stringr")
 
 load_data <- function() {
   online_retail <- readr::read_csv("OnlineRetail.csv")
@@ -16,6 +17,20 @@ load_data <- function() {
   online_retail$InvoiceAmount <- online_retail$Quantity * online_retail$UnitPrice
   
   return(online_retail)
+}
+
+get_top_words <- function(df) {
+  all_words <- c()
+  for(i in 1:nrow(df)){
+    if(is.na(df$Description[i])) {
+      all_words <- append(all_words, NA)
+    } else {
+      all_words <- append(all_words, stringr::str_split_1(df$Description[i], stringr::boundary("word")))
+    }
+  }
+  aggregate(all_words,list(Word=all_words),length) %>%
+    sort_by(~x,decreasing=TRUE) %>%
+    return()
 }
 
 # Split Costs and Revenue
