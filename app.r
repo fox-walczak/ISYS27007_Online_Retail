@@ -110,7 +110,6 @@ server <- function(input, output) {
   )
   rv <- reactiveValues()
   observe({
-    #rv$aggregate <- aggregate_functions[input$aggregate_function]
     rv$aggregate <- aggregate_functions %>% purrr::pluck(input$aggregate_function)
     rv$min_date <- input$date_range[1]
     rv$max_date <- input$date_range[2]
@@ -128,17 +127,17 @@ server <- function(input, output) {
   
   money_plots <- list(
     "revenue_over_time" = function(df){
-    ggplot(stats::aggregate(InvoiceAmount~InvoiceDate,filter_revenue(df), sum),
+    ggplot(stats::aggregate(InvoiceAmount~InvoiceDate,filter_revenue(df), rv$aggregate),
            mapping=aes(x=InvoiceDate,y=InvoiceAmount)) +
     geom_line(colour="green")
     },
     "costs_over_time" = function(df){
-    ggplot(stats::aggregate(InvoiceAmount~InvoiceDate,filter_cost(df), sum),
+    ggplot(stats::aggregate(InvoiceAmount~InvoiceDate,filter_cost(df), rv$aggregate),
            mapping=aes(x=InvoiceDate,y=InvoiceAmount)) +
     geom_line(colour="red")
     },
     "money_over_time" = function(df) {
-    stats::aggregate(InvoiceAmount~InvoiceDate+(InvoiceAmount<0), df, sum) %>% ggplot(
+    stats::aggregate(InvoiceAmount~InvoiceDate+(InvoiceAmount<0), df, rv$aggregate) %>% ggplot(
       mapping=aes(x=InvoiceDate,y=abs(InvoiceAmount), colour=InvoiceAmount<0)) +
     scale_colour_discrete(name="Key",labels=c("Revenue","Costs"), palette=c("green","red")) +
     geom_line()
@@ -155,7 +154,7 @@ server <- function(input, output) {
   #  ggplot(rv$or, mapping=aes(x=date_time,y=InvoiceAmount,colour=Country)) + geom_line()
   #})
   #output$revenue_by_country <- renderPlot({
-  #  country_data_frame <- stats::aggregate(InvoiceAmount~Country, filter_revenue(rv$or), sum)
+  #  country_data_frame <- stats::aggregate(InvoiceAmount~Country, filter_revenue(rv$or), rv$aggregate)
   #  ggplot(country_data_frame, mapping=aes(x=countries, y=sum_by_country, fill=countries)) +
   #    geom_bar(stat="identity", width=1)
   #})
