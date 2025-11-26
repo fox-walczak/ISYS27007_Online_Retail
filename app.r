@@ -89,8 +89,7 @@ ui <- shiny::navbarPage(
         )
       ),
       mainPanel(
-        textOutput("money"),
-        
+        textOutput("test"),
         h2("Money Over Time"),
         plotOutput("money_plot"),
       )
@@ -105,17 +104,24 @@ server <- function(input, output) {
   aggregate_functions <- list(
     "Sum" = sum,
     "Mean" = mean,
-    "Median" = median,
+    "Median" = stats::median,
     "Minimum" = min,
     "Maximum" = max
   )
   rv <- reactiveValues()
   observe({
-    rv$aggregate <- aggregate_functions[input$aggregate_function]
+    #rv$aggregate <- aggregate_functions[input$aggregate_function]
+    rv$aggregate <- aggregate_functions %>% purrr::pluck(input$aggregate_function)
     rv$min_date <- input$date_range[1]
     rv$max_date <- input$date_range[2]
     rv$or <- online_retail %>% dplyr::filter(InvoiceDate >= rv$min_date &
                                                InvoiceDate <= rv$max_date)
+  })
+  
+  output$test <- renderText({
+    paste(paste(c(1,2,3,4,5,6,6,6,6,6,6,7),collapse=","),
+          input$aggregate_function,
+          rv$aggregate(c(1,2,3,4,5,6,6,6,6,6,6,7)), collapse="|")
   })
   
   # REVENUE / COST
