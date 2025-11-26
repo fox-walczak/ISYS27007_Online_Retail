@@ -14,7 +14,8 @@ load_data <- function() {
   online_retail$date_time <- lubridate::as_datetime(online_retail$InvoiceDate, format="%m/%d/%Y %H:%M")
   online_retail$InvoiceDate <- as.Date(online_retail$InvoiceDate, format="%m/%d/%Y %H:%M")
  
-  online_retail$InvoiceAmount <- online_retail$Quantity * online_retail$UnitPrice
+  online_retail$is_cost <- online_retail$InvoiceAmount < 0
+  online_retail$InvoiceAmount <- abs(online_retail$Quantity * online_retail$UnitPrice)
   
   return(online_retail)
 }
@@ -32,13 +33,6 @@ get_top_words <- function(df) {
     sort_by(~x,decreasing=TRUE) %>%
     return()
 }
-
-# Split Costs and Revenue
-filter_cost <- function(df){return(
-  dplyr::filter(df, InvoiceAmount < 0) %>%
-    dplyr::mutate(InvoiceAmount = abs(InvoiceAmount))
-)}
-filter_revenue <- function(df){ return(dplyr::filter(df, InvoiceAmount > 0)) }
 
 # Profit
 calculate_profit <- function(df){ return(sum(dplyr::pull(df,InvoiceAmount))) }
@@ -127,20 +121,20 @@ server <- function(input, output) {
   
   money_plots <- list(
     "revenue_over_time" = function(df){
-    ggplot(stats::aggregate(InvoiceAmount~InvoiceDate,filter_revenue(df), rv$aggregate),
-           mapping=aes(x=InvoiceDate,y=InvoiceAmount)) +
-    geom_line(colour="green")
+      stats::aggregate(InvoiceAmount~InvoiceDate, dplyr::filter(df, !is_cost), rv$aggregate) %>%
+        ggplot(mapping=aes(x=InvoiceDate,y=InvoiceAmount)) +
+        geom_line(colour="green")
     },
     "costs_over_time" = function(df){
-    ggplot(stats::aggregate(InvoiceAmount~InvoiceDate,filter_cost(df), rv$aggregate),
-           mapping=aes(x=InvoiceDate,y=InvoiceAmount)) +
-    geom_line(colour="red")
+      stats::aggregate(InvoiceAmount~InvoiceDate, dplyr::filter(df, is_cost), rv$aggregate) %>%
+        ggplot(mapping=aes(x=InvoiceDate,y=InvoiceAmount)) +
+        geom_line(colour="red")
     },
     "money_over_time" = function(df) {
-    stats::aggregate(InvoiceAmount~InvoiceDate+(InvoiceAmount<0), df, rv$aggregate) %>% ggplot(
-      mapping=aes(x=InvoiceDate,y=abs(InvoiceAmount), colour=InvoiceAmount<0)) +
-    scale_colour_discrete(name="Key",labels=c("Revenue","Costs"), palette=c("green","red")) +
-    geom_line()
+    stats::aggregate(InvoiceAmount ~ InvoiceDate + is_cost, df, rv$aggregate) %>%
+        ggplot(mapping=aes(x=InvoiceDate,y=InvoiceAmount, colour=is_cost)) +
+        scale_colour_discrete(name="Key",labels=c("Revenue","Costs"), palette=c("green","red")) +
+        geom_line()
     }
   )
   
