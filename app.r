@@ -51,6 +51,39 @@ online_retail <- load_data()
 # UI
 
 PLOT_HEIGHT <- "200px"
+
+money_plot_choice_selection <-
+  shiny::checkboxGroupInput(
+    inputId = "money_plot_choice",
+    label   = "Show:",
+    choiceNames = c("Revenue", "Costs"),
+    choiceValues = c(1, 2)
+  )
+date_slider <-
+  shiny::sliderInput(
+    inputId="date_range",
+    label="Date Range",
+    min=min_date(online_retail),
+    max=max_date(online_retail),
+    value=c(min_date(online_retail), max_date(online_retail)),
+    step=1,
+    ticks=TRUE,
+    dragRange=TRUE
+  )
+aggregate_function_selection <-
+  shiny::selectInput(
+    inputId="aggregate_function",
+    label="Aggregate Function:",
+    choices=c("Sum","Mean","Median","Minimum","Maximum"),
+    selected="Sum"
+  )
+location_selection <-
+  shiny::checkboxGroupInput(
+    inputId = "locations",
+    label   = "Countries:",
+    choices = sort(unique(online_retail$Country))
+  )
+
 ui <- shiny::navbarPage(
   title = "Online Retail",
   theme = bslib::bs_theme(version=4,bootswatch="minty"),
@@ -60,37 +93,12 @@ ui <- shiny::navbarPage(
       sidebarPanel(
         h3("Filters"),
         width = 3,
-        shiny::checkboxGroupInput(
-          inputId = "money_plot_choice",
-          label   = "Show:",
-          choiceNames = c("Revenue", "Costs"),
-          choiceValues = c(1, 2),
-          selected = c(1, 2)
-        ),
-        shiny::sliderInput(
-          inputId="date_range",
-          label="Date Range",
-          min=min_date(online_retail),
-          max=max_date(online_retail),
-          value=c(min_date(online_retail), max_date(online_retail)),
-          step=1,
-          ticks=TRUE,
-          dragRange=TRUE
-        ),
-        shiny::selectInput(
-          inputId="aggregate_function",
-          label="Aggregate Function:",
-          choices=c("Sum","Mean","Median","Minimum","Maximum"),
-          selected="Sum"
-        ),
-        shiny::checkboxGroupInput(
-          inputId = "locations",
-          label   = "Countries:",
-          choices = sort(unique(online_retail$Country))
-        )
+        money_plot_choice_selection,
+        date_slider,
+        aggregate_function_selection,
+        location_selection
       ),
       mainPanel(
-        textOutput("test"),
         h2("Revenue/Costs Over Time"),
         plotOutput("money_plot",height=PLOT_HEIGHT),
         h2("Total Cashflow Over Time"),
