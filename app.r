@@ -7,6 +7,7 @@ library("DataExplorer") # ""
 library("plotly")       # Widgets
 library("tidyverse")    # Core
 library("stringr")
+library("forcats")
 
 load_data <- function() {
   online_retail <- readr::read_csv("OnlineRetail.csv")
@@ -80,7 +81,7 @@ aggregate_function_selection <-
 location_selection <-
   shiny::checkboxGroupInput(
     inputId = "locations",
-    label   = "Countries:",
+    label   = "Select Countries:",
     choices = sort(unique(online_retail$Country))
   )
 
@@ -101,10 +102,10 @@ ui <- shiny::navbarPage(
       mainPanel(
         h2("Revenue/Costs Over Time"),
         plotOutput("money_plot",height=PLOT_HEIGHT),
-        h2("Total Cashflow Over Time"),
+        h2("Cashflow Over Time"),
         plotOutput("cashflow_over_time",height=PLOT_HEIGHT),
         h2("Revenue/Costs By Location"),
-        plotOutput("location_plot",height=PLOT_HEIGHT),
+        plotOutput("location_plot"),
       )
     )
   )
@@ -181,17 +182,20 @@ server <- function(input, output) {
   location_plots <- list(
     "revenue_by_location" = function(df) {
       stats::aggregate(abs_invoice_amount~Country, dplyr::filter(df, !is_cost), rv$aggregate) %>%
-        ggplot(mapping=aes(x=Country,y=abs_invoice_amount)) +
+        sort_by(~abs_invoice_amount,decreasing=TRUE) %>%
+        ggplot(mapping=aes(x=fct_reorder(Country, abs_invoice_amount),y=abs_invoice_amount)) +
         geom_col(fill="green")
     },
     "costs_by_location" = function(df) {
       stats::aggregate(abs_invoice_amount~Country, dplyr::filter(df, is_cost), rv$aggregate) %>%
-        ggplot(mapping=aes(x=Country,y=abs_invoice_amount)) +
+        sort_by(~abs_invoice_amount,decreasing=TRUE) %>%
+        ggplot(mapping=aes(x=fct_reorder(Country, abs_invoice_amount),y=abs_invoice_amount)) +
         geom_col(fill="red")
     },
     "money_by_location" = function(df) {
-      stats::aggregate(InvoiceAmount ~ Country + is_cost, df, rv$aggregate) %>%
-        ggplot(mapping=aes(x=Country,y=InvoiceAmount, fill=is_cost)) +
+      stats::aggregate(abs_invoice_amount ~ Country + is_cost, df, rv$aggregate) %>%
+        sort_by(~abs_invoice_amount,decreasing=TRUE) %>%
+        ggplot(mapping=aes(x=fct_reorder(Country, abs_invoice_amount),y=abs_invoice_amount, fill=is_cost)) +
         scale_fill_discrete(name="Key",labels=c("Revenue","Costs"), palette=c("green","red")) +
         geom_col(position=position_dodge(preserve="single"))
     }
@@ -201,7 +205,8 @@ server <- function(input, output) {
   })
   output$location_plot <- renderPlot({
     purrr::pluck(location_plots, rv$location_plot)(rv$or) +
-    theme(axis.text.x = element_text(angle=90, vjust=.5, hjust=1))
+      theme(axis.text.x = element_text(angle=90, vjust=.5, hjust=1)) +
+      coord_flip()
   })
   #output$money_by_location <- renderPlot({
   #  ggplot(rv$or, mapping=aes(x=date_time,y=InvoiceAmount,colour=Country)) + geom_line()
