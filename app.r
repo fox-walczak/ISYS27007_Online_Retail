@@ -81,6 +81,11 @@ ui <- shiny::navbarPage(
           label="Aggregate Function:",
           choices=c("Sum","Mean","Median","Minimum","Maximum"),
           selected="Sum"
+        ),
+        shiny::checkboxGroupInput(
+          inputId = "locations",
+          label   = "Countries:",
+          choices = sort(unique(online_retail$Country))
         )
       ),
       mainPanel(
@@ -112,14 +117,14 @@ server <- function(input, output) {
     rv$aggregate <- aggregate_functions %>% purrr::pluck(input$aggregate_function)
     rv$min_date <- input$date_range[1]
     rv$max_date <- input$date_range[2]
-    rv$or <- online_retail %>% dplyr::filter(InvoiceDate >= rv$min_date &
-                                               InvoiceDate <= rv$max_date)
+    rv$or <- online_retail %>%
+      dplyr::filter(InvoiceDate >= rv$min_date & InvoiceDate <= rv$max_date &
+                      ((Country %in% input$locations) | (length(input$locations) == 0))
+      )
   })
   
   output$test <- renderText({
-    paste(paste(c(1,2,3,4,5,6,6,6,6,6,6,7),collapse=","),
-          input$aggregate_function,
-          rv$aggregate(c(1,2,3,4,5,6,6,6,6,6,6,7)), collapse="|")
+    paste(input$locations)
   })
   
   # REVENUE / COST
@@ -185,7 +190,8 @@ server <- function(input, output) {
     rv$location_plot <- location_plot_choices[sum(as.integer(input$money_plot_choice)) %% 3 + 1]
   })
   output$location_plot <- renderPlot({
-    purrr::pluck(location_plots, rv$location_plot)(rv$or)
+    purrr::pluck(location_plots, rv$location_plot)(rv$or) +
+    theme(axis.text.x = element_text(angle=90, vjust=.5, hjust=1))
   })
   #output$money_by_location <- renderPlot({
   #  ggplot(rv$or, mapping=aes(x=date_time,y=InvoiceAmount,colour=Country)) + geom_line()
