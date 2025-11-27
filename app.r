@@ -88,6 +88,8 @@ ui <- shiny::navbarPage(
         plotOutput("money_plot"),
         h2("Total Cashflow Over Time"),
         plotOutput("cashflow_over_time"),
+        h2("Revenue/Costs By Location"),
+        plotOutput("location_plot"),
       )
     )
   )
@@ -97,6 +99,7 @@ ui <- shiny::navbarPage(
 
 server <- function(input, output) {
   money_plot_choices <- c("money_over_time","revenue_over_time","costs_over_time")
+  location_plot_choices <- c("money_by_location","revenue_by_location","costs_by_location")
   aggregate_functions <- list(
     "Sum" = sum,
     "Mean" = mean,
@@ -146,6 +149,9 @@ server <- function(input, output) {
   output$money_plot <- renderPlot({
     purrr::pluck(money_plots, rv$money_plot_choice)(rv$or)
   })
+  
+  # CASHFLOW
+  
   cashflow_over_time = function(df) {
     stats::aggregate(InvoiceAmount ~ InvoiceDate, df, rv$aggregate) %>%
       ggplot(mapping=aes(x=InvoiceDate,y=InvoiceAmount)) +
@@ -153,6 +159,33 @@ server <- function(input, output) {
   }
   output$cashflow_over_time <- renderPlot({
     cashflow_over_time(rv$or)
+  })
+  
+  # LOCATION
+  
+  location_plots <- list(
+    "revenue_by_location" = function(df) {
+      stats::aggregate(InvoiceAmount~Country, dplyr::filter(df, !is_cost), rv$aggregate) %>%
+        ggplot(mapping=aes(x=Country,y=InvoiceAmount)) +
+        geom_col(fill="green")
+    },
+    "costs_by_location" = function(df) {
+      stats::aggregate(InvoiceAmount~Country, dplyr::filter(df, is_cost), rv$aggregate) %>%
+        ggplot(mapping=aes(x=Country,y=InvoiceAmount)) +
+        geom_col(fill="red")
+    },
+    "money_by_location" = function(df) {
+      stats::aggregate(InvoiceAmount ~ Country + is_cost, df, rv$aggregate) %>%
+        ggplot(mapping=aes(x=Country,y=InvoiceAmount, fill=is_cost)) +
+        scale_fill_discrete(name="Key",labels=c("Revenue","Costs"), palette=c("green","red")) +
+        geom_col(position=position_dodge(preserve="single"))
+    }
+  )
+  observe({
+    rv$location_plot <- location_plot_choices[sum(as.integer(input$money_plot_choice)) %% 3 + 1]
+  })
+  output$location_plot <- renderPlot({
+    purrr::pluck(location_plots, rv$location_plot)(rv$or)
   })
   #output$money_by_location <- renderPlot({
   #  ggplot(rv$or, mapping=aes(x=date_time,y=InvoiceAmount,colour=Country)) + geom_line()
