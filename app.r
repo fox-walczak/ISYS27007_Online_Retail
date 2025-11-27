@@ -87,7 +87,8 @@ location_selection <-
 
 ui <- shiny::navbarPage(
   title = "Online Retail",
-  theme = bslib::bs_theme(version=4,bootswatch="minty"),
+  theme = bslib::bs_theme(bootswatch="flatly",
+                          base_font="'Montserrat','Roboto','Open Sans','Noto Sans','Poppins','Nunito','Segoe UI','Arial','Verdana','Consolas'"),
   tabPanel(
     title = "Bundle and Promote",
     sidebarLayout(
@@ -100,11 +101,11 @@ ui <- shiny::navbarPage(
         location_selection
       ),
       mainPanel(
-        h2("Revenue/Costs Over Time"),
+        #h2("Revenue/Costs Over Time"),
         plotOutput("money_plot",height=PLOT_HEIGHT),
-        h2("Cashflow Over Time"),
-        plotOutput("cashflow_over_time",height=PLOT_HEIGHT),
-        h2("Revenue/Costs By Location"),
+        #h2("profit Over Time"),
+        plotOutput("profit_over_time",height=PLOT_HEIGHT),
+        #h2("Revenue/Costs By Location"),
         plotOutput("location_plot"),
       )
     )
@@ -123,6 +124,7 @@ server <- function(input, output) {
     "Minimum" = min,
     "Maximum" = max
   )
+  name_of <- function(ag_fn) {if(ag_fn=="Sum"){return("Total")}else{return(ag_fn)}}
   rv <- reactiveValues()
   observe({
     rv$aggregate <- aggregate_functions %>% purrr::pluck(input$aggregate_function)
@@ -144,18 +146,18 @@ server <- function(input, output) {
     "revenue_over_time" = function(df){
       stats::aggregate(abs_invoice_amount~InvoiceDate, dplyr::filter(df, !is_cost), rv$aggregate) %>%
         ggplot(mapping=aes(x=InvoiceDate,y=abs_invoice_amount)) +
-        geom_line(colour="green")
+        geom_line(colour="green") + ggtitle("Revenue Over Time")
     },
     "costs_over_time" = function(df){
       stats::aggregate(abs_invoice_amount~InvoiceDate, dplyr::filter(df, is_cost), rv$aggregate) %>%
         ggplot(mapping=aes(x=InvoiceDate,y=abs_invoice_amount)) +
-        geom_line(colour="red")
+        geom_line(colour="red") + ggtitle("Costs Over Time")
     },
     "money_over_time" = function(df) {
       stats::aggregate(abs_invoice_amount ~ InvoiceDate + is_cost, df, rv$aggregate) %>%
         ggplot(mapping=aes(x=InvoiceDate,y=abs_invoice_amount, colour=is_cost)) +
         scale_colour_discrete(name="Key",labels=c("Revenue","Costs"), palette=c("green","red")) +
-        geom_line()
+        geom_line() + ggtitle("Revenue and Costs Over Time")
     }
   )
   
@@ -163,18 +165,22 @@ server <- function(input, output) {
     rv$money_plot_choice <- money_plot_choices[sum(as.integer(input$money_plot_choice)) %% 3 + 1]
   })
   output$money_plot <- renderPlot({
-    purrr::pluck(money_plots, rv$money_plot_choice)(rv$or)
+    purrr::pluck(money_plots, rv$money_plot_choice)(rv$or) +
+      ylab(paste(name_of(rv$aggregate), "(£)"), collapse=" ") +
+      xlab("Date")
   })
   
-  # CASHFLOW
+  # PROFIT
   
-  cashflow_over_time = function(df) {
+  profit_over_time = function(df) {
     stats::aggregate(invoice_amount ~ InvoiceDate, df, rv$aggregate) %>%
       ggplot(mapping=aes(x=InvoiceDate,y=invoice_amount)) +
-      geom_line()
+      geom_line(colour="#2c3e50") + ggtitle("Daily Profit")
   }
-  output$cashflow_over_time <- renderPlot({
-    cashflow_over_time(rv$or)
+  output$profit_over_time <- renderPlot({
+    profit_over_time(rv$or) + theme_bw() +
+      ylab(paste(name_of(rv$aggregate), "(£)", collapse=" ")) +
+      xlab("Date")
   })
   
   # LOCATION
@@ -184,20 +190,20 @@ server <- function(input, output) {
       stats::aggregate(abs_invoice_amount~Country, dplyr::filter(df, !is_cost), rv$aggregate) %>%
         sort_by(~abs_invoice_amount,decreasing=TRUE) %>%
         ggplot(mapping=aes(x=fct_reorder(Country, abs_invoice_amount),y=abs_invoice_amount)) +
-        geom_col(fill="green")
+        geom_col(fill="green") + ggtitle(paste(name_of(rv$aggregate), "Revenue by Country", collapse=" "))
     },
     "costs_by_location" = function(df) {
       stats::aggregate(abs_invoice_amount~Country, dplyr::filter(df, is_cost), rv$aggregate) %>%
         sort_by(~abs_invoice_amount,decreasing=TRUE) %>%
         ggplot(mapping=aes(x=fct_reorder(Country, abs_invoice_amount),y=abs_invoice_amount)) +
-        geom_col(fill="red")
+        geom_col(fill="red") + ggtitle(paste(name_of(rv$aggregate), "Costs by Country", collapse=" "))
     },
     "money_by_location" = function(df) {
       stats::aggregate(abs_invoice_amount ~ Country + is_cost, df, rv$aggregate) %>%
         sort_by(~abs_invoice_amount,decreasing=TRUE) %>%
         ggplot(mapping=aes(x=fct_reorder(Country, abs_invoice_amount),y=abs_invoice_amount, fill=is_cost)) +
         scale_fill_discrete(name="Key",labels=c("Revenue","Costs"), palette=c("green","red")) +
-        geom_col(position=position_dodge(preserve="single"))
+        geom_col(position=position_dodge(preserve="single")) + ggtitle(paste(name_of(rv$aggregate), "Revenue/Costs by Country",collapse=" "))
     }
   )
   observe({
@@ -206,16 +212,11 @@ server <- function(input, output) {
   output$location_plot <- renderPlot({
     purrr::pluck(location_plots, rv$location_plot)(rv$or) +
       theme(axis.text.x = element_text(angle=90, vjust=.5, hjust=1)) +
-      coord_flip()
+      coord_flip() +
+      theme_bw() +
+      ylab(paste(name_of(rv$aggregate), "(£)"),collapse=" ") +
+      xlab("")
   })
-  #output$money_by_location <- renderPlot({
-  #  ggplot(rv$or, mapping=aes(x=date_time,y=InvoiceAmount,colour=Country)) + geom_line()
-  #})
-  #output$revenue_by_country <- renderPlot({
-  #  country_data_frame <- stats::aggregate(InvoiceAmount~Country, filter_revenue(rv$or), rv$aggregate)
-  #  ggplot(country_data_frame, mapping=aes(x=countries, y=sum_by_country, fill=countries)) +
-  #    geom_bar(stat="identity", width=1)
-  #})
   
   # KPIs
   output$profit <- renderText({calculate_profit(rv$or)})
