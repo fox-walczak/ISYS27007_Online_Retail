@@ -50,6 +50,7 @@ online_retail <- load_data()
 
 # UI
 
+PLOT_HEIGHT <- "200px"
 ui <- shiny::navbarPage(
   title = "Online Retail",
   theme = bslib::bs_theme(version=4,bootswatch="minty"),
@@ -89,12 +90,13 @@ ui <- shiny::navbarPage(
         )
       ),
       mainPanel(
+        textOutput("test"),
         h2("Revenue/Costs Over Time"),
-        plotOutput("money_plot"),
+        plotOutput("money_plot",height=PLOT_HEIGHT),
         h2("Total Cashflow Over Time"),
-        plotOutput("cashflow_over_time"),
+        plotOutput("cashflow_over_time",height=PLOT_HEIGHT),
         h2("Revenue/Costs By Location"),
-        plotOutput("location_plot"),
+        plotOutput("location_plot",height=PLOT_HEIGHT),
       )
     )
   )
