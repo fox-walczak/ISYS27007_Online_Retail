@@ -14,9 +14,9 @@ load_data <- function() {
   online_retail$date_time <- lubridate::as_datetime(online_retail$InvoiceDate, format="%m/%d/%Y %H:%M")
   online_retail$InvoiceDate <- as.Date(online_retail$InvoiceDate, format="%m/%d/%Y %H:%M")
  
-  online_retail$InvoiceAmount <- online_retail$Quantity * online_retail$UnitPrice
-  online_retail$is_cost <- online_retail$InvoiceAmount < 0
-  online_retail$InvoiceAmount <- abs(online_retail$InvoiceAmount)
+  online_retail$invoice_amount <- online_retail$Quantity * online_retail$UnitPrice
+  online_retail$is_cost <- online_retail$invoice_amount < 0
+  online_retail$abs_invoice_amount <- abs(online_retail$invoice_amount)
   
   return(online_retail)
 }
@@ -36,7 +36,7 @@ get_top_words <- function(df) {
 }
 
 # Profit
-calculate_profit <- function(df){ return(sum(dplyr::pull(df,InvoiceAmount))) }
+calculate_profit <- function(df){ return(sum(dplyr::pull(df,invoice_amount))) }
 
 # Get Min/Max Date
 min_date <- function(df) { return(min(dplyr::pull(df,InvoiceDate))) }
@@ -141,18 +141,18 @@ server <- function(input, output) {
   
   money_plots <- list(
     "revenue_over_time" = function(df){
-      stats::aggregate(InvoiceAmount~InvoiceDate, dplyr::filter(df, !is_cost), rv$aggregate) %>%
-        ggplot(mapping=aes(x=InvoiceDate,y=InvoiceAmount)) +
+      stats::aggregate(abs_invoice_amount~InvoiceDate, dplyr::filter(df, !is_cost), rv$aggregate) %>%
+        ggplot(mapping=aes(x=InvoiceDate,y=abs_invoice_amount)) +
         geom_line(colour="green")
     },
     "costs_over_time" = function(df){
-      stats::aggregate(InvoiceAmount~InvoiceDate, dplyr::filter(df, is_cost), rv$aggregate) %>%
-        ggplot(mapping=aes(x=InvoiceDate,y=InvoiceAmount)) +
+      stats::aggregate(abs_invoice_amount~InvoiceDate, dplyr::filter(df, is_cost), rv$aggregate) %>%
+        ggplot(mapping=aes(x=InvoiceDate,y=abs_invoice_amount)) +
         geom_line(colour="red")
     },
     "money_over_time" = function(df) {
-    stats::aggregate(InvoiceAmount ~ InvoiceDate + is_cost, df, rv$aggregate) %>%
-        ggplot(mapping=aes(x=InvoiceDate,y=InvoiceAmount, colour=is_cost)) +
+    stats::aggregate(abs_invoice_amount ~ InvoiceDate + is_cost, df, rv$aggregate) %>%
+        ggplot(mapping=aes(x=InvoiceDate,y=abs_invoice_amount, colour=is_cost)) +
         scale_colour_discrete(name="Key",labels=c("Revenue","Costs"), palette=c("green","red")) +
         geom_line()
     }
@@ -168,8 +168,8 @@ server <- function(input, output) {
   # CASHFLOW
   
   cashflow_over_time = function(df) {
-    stats::aggregate(InvoiceAmount ~ InvoiceDate, df, rv$aggregate) %>%
-      ggplot(mapping=aes(x=InvoiceDate,y=InvoiceAmount)) +
+    stats::aggregate(invoice_amount ~ InvoiceDate, df, rv$aggregate) %>%
+      ggplot(mapping=aes(x=InvoiceDate,y=invoice_amount)) +
       geom_line()
   }
   output$cashflow_over_time <- renderPlot({
