@@ -151,7 +151,7 @@ server <- function(input, output) {
         geom_line(colour="red")
     },
     "money_over_time" = function(df) {
-    stats::aggregate(abs_invoice_amount ~ InvoiceDate + is_cost, df, rv$aggregate) %>%
+      stats::aggregate(abs_invoice_amount ~ InvoiceDate + is_cost, df, rv$aggregate) %>%
         ggplot(mapping=aes(x=InvoiceDate,y=abs_invoice_amount, colour=is_cost)) +
         scale_colour_discrete(name="Key",labels=c("Revenue","Costs"), palette=c("green","red")) +
         geom_line()
@@ -180,13 +180,13 @@ server <- function(input, output) {
   
   location_plots <- list(
     "revenue_by_location" = function(df) {
-      stats::aggregate(InvoiceAmount~Country, dplyr::filter(df, !is_cost), rv$aggregate) %>%
-        ggplot(mapping=aes(x=Country,y=InvoiceAmount)) +
+      stats::aggregate(abs_invoice_amount~Country, dplyr::filter(df, !is_cost), rv$aggregate) %>%
+        ggplot(mapping=aes(x=Country,y=abs_invoice_amount)) +
         geom_col(fill="green")
     },
     "costs_by_location" = function(df) {
-      stats::aggregate(InvoiceAmount~Country, dplyr::filter(df, is_cost), rv$aggregate) %>%
-        ggplot(mapping=aes(x=Country,y=InvoiceAmount)) +
+      stats::aggregate(abs_invoice_amount~Country, dplyr::filter(df, is_cost), rv$aggregate) %>%
+        ggplot(mapping=aes(x=Country,y=abs_invoice_amount)) +
         geom_col(fill="red")
     },
     "money_by_location" = function(df) {
