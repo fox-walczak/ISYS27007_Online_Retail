@@ -37,16 +37,25 @@ get_top_words <- function(df) {
 }
 
 # Profit = Revenue - Cost
-calculate_profit <- function(df){
+calculate_profit <- function(df) {
   return(
-    sum(dplyr::pull(df,invoice_amount)) %>% signif(3)
+    sum(dplyr::pull(df,invoice_amount))
   )}
 # Profit margin = (Revenue - Cost) / Revenue
-calculate_profit_margin <- function(df){
+calculate_profit_margin <- function(df) {
   return(
-    (pull(df, invoice_amount) %>% sum() / max(filter(df, !is_cost) %>%
-            pull(invoice_amount) %>% sum(), 0.000001) * 100) %>% signif(3)
+    pull(df, invoice_amount) %>% sum() / max(filter(df, !is_cost) %>%
+            pull(invoice_amount) %>% sum(), 0.000001) * 100
   )}
+calculate_clv <- function(df) {
+  return(
+    df %>%
+      filter(!is_cost) %>%
+      aggregate(invoice_amount ~ CustomerID, ., sum) %>%
+      pull(invoice_amount) %>%
+      mean()
+  )
+}
 
 # Get Min/Max Date
 min_date <- function(df) { return(min(dplyr::pull(df,InvoiceDate))) }
@@ -102,6 +111,11 @@ profit_margin_icon <- HTML('<svg xmlns="http://www.w3.org/2000/svg" width=50% fi
 # From https://icons.getbootstrap.com/icons/currency-pound/
 profit_icon <- HTML('<svg xmlns="http://www.w3.org/2000/svg" width=50% fill="currentColor" class="bi bi-currency-pound" viewBox="0 0 16 16"> <path d="M4 8.585h1.969c.115.465.186.939.186 1.43 0 1.385-.736 2.496-2.075 2.771V14H12v-1.24H6.492v-.129c.825-.525 1.135-1.446 1.135-2.694 0-.465-.07-.913-.168-1.352h3.29v-.972H7.22c-.186-.723-.372-1.455-.372-2.247 0-1.274 1.047-2.066 2.58-2.066a5.3 5.3 0 0 1 2.103.465V2.456A5.6 5.6 0 0 0 9.348 2C6.865 2 5.322 3.291 5.322 5.366c0 .775.195 1.515.399 2.247H4z"/> </svg>')
 
+# From https://icons.getbootstrap.com/icons/person/
+clv_icon <- HTML('<svg xmlns="http://www.w3.org/2000/svg" width=50% fill="currentColor" class="bi bi-person" viewBox="0 0 16 16">
+  <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0m4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4m-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10s-3.516.68-4.168 1.332c-.678.678-.83 1.418-.832 1.664z"/>
+</svg>')
+
 ui <- shiny::navbarPage(
   title = "Online Retail",
   theme = bslib::bs_theme(bootswatch="flatly",
@@ -129,6 +143,11 @@ ui <- shiny::navbarPage(
             title = "Total Profit", 
             textOutput("profit"), 
             showcase = profit_icon
+          ),
+          value_box( 
+            title = "Customer Lifetime Value", 
+            textOutput("clv"), 
+            showcase = clv_icon
           )
         ),
         plotOutput("money_plot",height=PLOT_HEIGHT),
@@ -141,7 +160,7 @@ ui <- shiny::navbarPage(
   )
 )
 
-# SERVER
+#------------------------ SERVER -----------------------------------------------
 
 server <- function(input, output) {
   money_plot_choices <- c("money_over_time","revenue_over_time","costs_over_time")
@@ -166,6 +185,18 @@ server <- function(input, output) {
       )
   })
   
+  #----------------------- OUTPUTS ---------------------------------------------
+  
+  # KPIs
+  output$profit <- renderText({
+    format(signif(calculate_profit(rv$or),3), big.mark=",")
+  })
+  output$profit_margin <- renderText({
+    signif(calculate_profit_margin(rv$or), 3)
+  })
+  output$clv <- renderText({
+    format(signif(calculate_clv(rv$or),3), big.mark=",")
+  })
   output$test <- renderText({
     paste(input$locations)
   })
@@ -257,14 +288,6 @@ server <- function(input, output) {
       scale_y_continuous(label = scales::label_number(scale_cut = scales::cut_short_scale())) +
       ylab(paste(name_of(input$aggregate_function), "(£)")) +
       xlab("")
-  })
-  
-  # KPIs
-  output$profit <- renderText({
-    format(calculate_profit(rv$or), big.mark=",")
-  })
-  output$profit_margin <- renderText({
-    format(calculate_profit_margin(rv$or), nsmall=1)
   })
 }
 
