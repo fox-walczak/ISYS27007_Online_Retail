@@ -36,8 +36,17 @@ get_top_words <- function(df) {
     return()
 }
 
-# Profit
-calculate_profit <- function(df){ return(sum(dplyr::pull(df,invoice_amount))) }
+# Profit = Revenue - Cost
+calculate_profit <- function(df){
+  return(
+    sum(dplyr::pull(df,invoice_amount)) %>% signif(3)
+  )}
+# Profit margin = (Revenue - Cost) / Revenue
+calculate_profit_margin <- function(df){
+  return(
+    (pull(df, invoice_amount) %>% sum() / max(filter(df, !is_cost) %>%
+            pull(invoice_amount) %>% sum(), 0.000001) * 100) %>% signif(3)
+  )}
 
 # Get Min/Max Date
 min_date <- function(df) { return(min(dplyr::pull(df,InvoiceDate))) }
@@ -85,6 +94,12 @@ location_selection <-
     choices = sort(unique(online_retail$Country))
   )
 
+# From https://icons.getbootstrap.com/icons/percent/
+profit_margin_icon <- HTML('<svg xmlns="http://www.w3.org/2000/svg" width=50% fill="currentColor" class="bi bi-percent" viewBox="0 0 16 16"> <path d="M13.442 2.558a.625.625 0 0 1 0 .884l-10 10a.625.625 0 1 1-.884-.884l10-10a.625.625 0 0 1 .884 0M4.5 6a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m0 1a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5m7 6a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m0 1a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5"/> </svg>')
+
+# From https://icons.getbootstrap.com/icons/currency-pound/
+profit_icon <- HTML('<svg xmlns="http://www.w3.org/2000/svg" width=50% fill="currentColor" class="bi bi-currency-pound" viewBox="0 0 16 16"> <path d="M4 8.585h1.969c.115.465.186.939.186 1.43 0 1.385-.736 2.496-2.075 2.771V14H12v-1.24H6.492v-.129c.825-.525 1.135-1.446 1.135-2.694 0-.465-.07-.913-.168-1.352h3.29v-.972H7.22c-.186-.723-.372-1.455-.372-2.247 0-1.274 1.047-2.066 2.58-2.066a5.3 5.3 0 0 1 2.103.465V2.456A5.6 5.6 0 0 0 9.348 2C6.865 2 5.322 3.291 5.322 5.366c0 .775.195 1.515.399 2.247H4z"/> </svg>')
+
 ui <- shiny::navbarPage(
   title = "Online Retail",
   theme = bslib::bs_theme(bootswatch="flatly",
@@ -102,6 +117,20 @@ ui <- shiny::navbarPage(
         )
       ),
       mainPanel(
+        layout_columns(
+          value_box( 
+            title = "Profit Margin", 
+            width = 0.5,
+            textOutput("profit_margin"), 
+            showcase = profit_margin_icon
+          ),
+          value_box( 
+            title = "Total Profit", 
+            width = 0.5,
+            textOutput("profit"), 
+            showcase = profit_icon
+          )
+        ),
         plotOutput("money_plot",height=PLOT_HEIGHT),
         plotOutput("profit_over_time",height=PLOT_HEIGHT),
         plotOutput("location_plot")
@@ -227,7 +256,12 @@ server <- function(input, output) {
   })
   
   # KPIs
-  output$profit <- renderText({calculate_profit(rv$or)})
+  output$profit <- renderText({
+    format(calculate_profit(rv$or), big.mark=",")
+  })
+  output$profit_margin <- renderText({
+    format(calculate_profit_margin(rv$or), nsmall=1)
+  })
 }
 
 # ------- PROGRAM START -------
