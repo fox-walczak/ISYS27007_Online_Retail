@@ -84,6 +84,8 @@ online_retail <- load_data()
 # UI
 
 PLOT_HEIGHT <- "200px"
+GREEN <- "darkgreen"
+RED <- "darkred"
 
 money_plot_choice_selection <-
   shiny::checkboxGroupInput(
@@ -143,20 +145,20 @@ ui <- shiny::navbarPage(
         layout_columns(
           value_box( 
             title = "Profit Margin", 
-            width = 0.5,
             textOutput("profit_margin"), 
             showcase = profit_margin_icon
           ),
           value_box( 
             title = "Total Profit", 
-            width = 0.5,
             textOutput("profit"), 
             showcase = profit_icon
           )
         ),
         plotOutput("money_plot",height=PLOT_HEIGHT),
-        plotOutput("profit_over_time",height=PLOT_HEIGHT),
-        plotOutput("location_plot")
+        layout_columns(
+          plotOutput("profit_over_time",height=PLOT_HEIGHT),
+          plotOutput("location_plot")
+        )
       )
     )
   )
@@ -197,17 +199,17 @@ server <- function(input, output) {
     "revenue_over_time" = function(df){
       stats::aggregate(abs_invoice_amount~InvoiceDate, dplyr::filter(df, !is_cost), rv$aggregate) %>%
         ggplot(mapping=aes(x=InvoiceDate,y=abs_invoice_amount)) +
-        geom_line(colour="green") + ggtitle(paste(name_daily(input$aggregate_function), "Revenue Over Time"))
+        geom_line(colour=GREEN) + ggtitle(paste(name_daily(input$aggregate_function), "Revenue Over Time"))
     },
     "costs_over_time" = function(df){
       stats::aggregate(abs_invoice_amount~InvoiceDate, dplyr::filter(df, is_cost), rv$aggregate) %>%
         ggplot(mapping=aes(x=InvoiceDate,y=abs_invoice_amount)) +
-        geom_line(colour="red") + ggtitle(paste(name_daily(input$aggregate_function), "Costs Over Time"))
+        geom_line(colour=RED) + ggtitle(paste(name_daily(input$aggregate_function), "Costs Over Time"))
     },
     "money_over_time" = function(df) {
       stats::aggregate(abs_invoice_amount ~ InvoiceDate + is_cost, df, rv$aggregate) %>%
         ggplot(mapping=aes(x=InvoiceDate,y=abs_invoice_amount, colour=is_cost)) +
-        scale_colour_discrete(name="Key",labels=c("Revenue","Costs"), palette=c("green","red")) +
+        scale_colour_discrete(name="Key",labels=c("Revenue","Costs"), palette=c(GREEN,RED)) +
         geom_line() + ggtitle(paste(name_daily(input$aggregate_function),"Revenue and Costs Over Time"))
     }
   )
@@ -228,7 +230,7 @@ server <- function(input, output) {
   profit_over_time = function(df) {
     stats::aggregate(invoice_amount ~ InvoiceDate, df, rv$aggregate) %>%
       ggplot(mapping=aes(x=InvoiceDate,y=invoice_amount)) +
-      geom_line(colour="#2c3e50") + ggtitle("Daily Profit")
+      geom_line(colour="#2c3e50") + ggtitle(paste(name_of(input$aggregate_function), "Daily Profit"))
   }
   output$profit_over_time <- renderPlot({
     profit_over_time(rv$or) + theme_bw() +
@@ -252,19 +254,19 @@ server <- function(input, output) {
       stats::aggregate(abs_invoice_amount~Country, dplyr::filter(df, !is_cost), rv$aggregate) %>%
         sort_by(~abs_invoice_amount,decreasing=TRUE) %>%
         ggplot(mapping=aes(x=fct_reorder(Country, abs_invoice_amount),y=abs_invoice_amount)) +
-        geom_col(fill="green") + location_title("Revenue")
+        geom_col(fill=GREEN) + location_title("Revenue")
     },
     "costs_by_location" = function(df) {
       stats::aggregate(abs_invoice_amount~Country, dplyr::filter(df, is_cost), rv$aggregate) %>%
         sort_by(~abs_invoice_amount,decreasing=TRUE) %>%
         ggplot(mapping=aes(x=fct_reorder(Country, abs_invoice_amount),y=abs_invoice_amount)) +
-        geom_col(fill="red") + location_title("Costs")
+        geom_col(fill=RED) + location_title("Costs")
     },
     "money_by_location" = function(df) {
       stats::aggregate(abs_invoice_amount ~ Country + is_cost, df, rv$aggregate) %>%
         sort_by(~abs_invoice_amount,decreasing=TRUE) %>%
         ggplot(mapping=aes(x=fct_reorder(Country, abs_invoice_amount),y=abs_invoice_amount, fill=is_cost)) +
-        scale_fill_discrete(name="Key",labels=c("Revenue","Costs"), palette=c("green","red")) +
+        scale_fill_discrete(name="Key",labels=c("Revenue","Costs"), palette=c(GREEN,RED)) +
         geom_col(position=position_dodge(preserve="single")) + location_title("Revenue and Costs")
     }
   )
