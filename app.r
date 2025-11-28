@@ -147,7 +147,16 @@ ui <- shiny::navbarPage(
     )
   ),
   tabPanel(
-    "Sales"
+    "Sales",
+    sidebarLayout(
+      sidebarPanel(accordion(
+        accordion_panel("Date Range", date_slider("sales.date_range")),
+        accordion_panel("Select Countries", location_selection("sales.locations"))
+      )),
+      mainPanel(
+        plotOutput("sales.quantity_over_time")
+      )
+    ),
   )
 )
 
@@ -201,6 +210,7 @@ server <- function(input, output) {
   })
   
   # ----PLOTS----
+  COLOUR <- "#2c3e50"
   
   NO_DATA <- "No data for the selected filters."
   OTHER_ERROR <- "An error occurred."
@@ -209,6 +219,13 @@ server <- function(input, output) {
       return(ggplot() + ggtitle(NO_DATA) + theme_bw())
     } else {
       return(ggplot() + ggtitle(OTHER_ERROR) + theme_bw())
+    }
+  }
+  test_error <- function(e) {
+    if(conditionMessage(e)=="no rows to aggregate") {
+      return(ggplot() + ggtitle(NO_DATA) + theme_bw())
+    } else {
+      return(ggplot() + ggtitle(conditionMessage(e)) + theme_bw())
     }
   }
   
@@ -251,7 +268,7 @@ server <- function(input, output) {
   profit_over_time = function(df) {
     stats::aggregate(invoice_amount ~ InvoiceDate, df, rv$aggregate) %>%
       ggplot(mapping=aes(x=InvoiceDate,y=invoice_amount)) +
-      geom_line(colour="#2c3e50") + ggtitle(paste(name_of(input$aggregate_function), "Daily Profit"))
+      geom_line(colour=COLOUR) + ggtitle(paste(name_of(input$aggregate_function), "Daily Profit"))
   }
   output$profit_over_time <- renderPlot({
     tryCatch({
@@ -305,6 +322,45 @@ server <- function(input, output) {
       xlab("")
     },
     error=plot_error)
+  })
+  
+  sales <- reactiveValues()
+  observe({
+    sales$or <- online_retail %>%
+      dplyr::filter(InvoiceDate >= input$sales.date_range[1] & InvoiceDate <= input$sales.date_range[2] &
+                      ((length(input$sales.locations) == 0) | (Country %in% input$sales.locations)))
+  })
+  is_different <- function(a, b, unit) {
+    return(floor_date(a,unit) != floor_date(b,unit))
+  }
+  floor_date_func <- function(a, b) {
+    if(is_different(a, b, "year")) {
+      unit <- "day"
+    } else if(is_different(a, b, "month")) {
+      unit <- "hour"
+    } else if(is_different(a, b, "week")) {
+      unit <- "minute"
+    } else if(is_different(a, b, "day")) {
+      unit <- "second"
+    } else {
+      unit <- "second"
+    }
+    return(function(d) {floor_date(d, unit=unit)})
+  }
+  output$sales.quantity_over_time <- renderPlot({
+    tryCatch({
+      floor_dt <- floor_date_func(input$sales.date_range[1], input$sales.date_range[2])
+      sales$or %>% dplyr::filter((!is_cost) & (Quantity > 0) & (Quantity < median(Quantity) + 3 * sd(Quantity,na.rm=TRUE))) %>%
+        mutate(date_time = floor_dt(date_time)) %>%
+        aggregate(cbind(Quantity,UnitPrice) ~ date_time+Country, ., sum) %>%
+        ggplot(aes(x=date_time,
+                   y=Quantity,
+                   size=UnitPrice,
+                   colour=Country)) +
+        geom_point(alpha=0.5) +
+        geom_smooth(colour=COLOUR) +
+        xlab("Date/Time")
+    },error=plot_error)
   })
 }
 
