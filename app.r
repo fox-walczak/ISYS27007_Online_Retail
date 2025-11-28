@@ -73,16 +73,16 @@ PLOT_HEIGHT <- "200px"
 GREEN <- "darkgreen"
 RED <- "darkred"
 
-money_plot_choice_selection <-
+money_plot_choice_selection <- function(id) {
   shiny::checkboxGroupInput(
-    inputId = "money_plot_choice",
+    inputId = id,
     label=NULL,
     choiceNames = c("Revenue", "Costs"),
     choiceValues = c(1, 2)
-  )
-date_slider <-
+  )}
+date_slider <- function(id) {
   shiny::sliderInput(
-    inputId="date_range",
+    inputId=id,
     label=NULL,
     min=min_date(online_retail),
     max=max_date(online_retail),
@@ -90,20 +90,20 @@ date_slider <-
     step=1,
     ticks=TRUE,
     dragRange=TRUE
-  )
-aggregate_function_selection <-
+  )}
+aggregate_function_selection <- function(id) {
   shiny::selectInput(
-    inputId="aggregate_function",
+    inputId=id,
     label=NULL,
     choices=c("Sum","Mean","Median","Minimum","Maximum"),
     selected="Sum"
-  )
-location_selection <-
+  )}
+location_selection <- function(id) {
   shiny::checkboxGroupInput(
-    inputId = "locations",
+    inputId = id,
     label=NULL,
     choices = sort(unique(online_retail$Country))
-  )
+  )}
 
 # From https://icons.getbootstrap.com/icons/percent/
 profit_margin_icon <- HTML('<svg xmlns="http://www.w3.org/2000/svg" width=50% fill="currentColor" class="bi bi-percent" viewBox="0 0 16 16"> <path d="M13.442 2.558a.625.625 0 0 1 0 .884l-10 10a.625.625 0 1 1-.884-.884l10-10a.625.625 0 0 1 .884 0M4.5 6a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m0 1a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5m7 6a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m0 1a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5"/> </svg>')
@@ -117,43 +117,37 @@ clv_icon <- HTML('<svg xmlns="http://www.w3.org/2000/svg" width=50% fill="curren
 </svg>')
 
 ui <- shiny::navbarPage(
-  title = "Online Retail",
+  title = "Online Retail: Bundle and Promote",
   theme = bslib::bs_theme(bootswatch="flatly",
                           base_font="'Montserrat','Roboto','Open Sans','Noto Sans','Poppins','Nunito','Segoe UI','Arial','Verdana','Consolas'"),
-  tabPanel(
-    title = "Bundle and Promote",
+  tabPanel(title = "Financial",
     sidebarLayout(
       sidebarPanel(
         width = 3,
         accordion(open=c("Show...", "Aggregate Function", "Date Range"), multiple=TRUE,
-                  accordion_panel( "Show...", money_plot_choice_selection ),
-                  accordion_panel( "Aggregate Function", aggregate_function_selection ),
-                  accordion_panel( "Date Range", date_slider ),
-                  accordion_panel( "Select Countries", location_selection )
-        )
+                  accordion_panel( "Show...", money_plot_choice_selection("money_plot_choice") ),
+                  accordion_panel( "Aggregate Function", aggregate_function_selection("aggregate_function") ),
+                  accordion_panel( "Date Range", date_slider("date_range") ),
+                  accordion_panel( "Select Countries", location_selection("locations") ))
       ),
       mainPanel(
         layout_columns(
-          value_box( 
-            title = "Profit Margin",  textOutput("profit_margin"), 
-            showcase = profit_margin_icon
-          ),
-          value_box( 
-            title = "Total Profit",  textOutput("profit"), 
-            showcase = profit_icon
-          ),
-          value_box( 
-            title = "Customer Lifetime Value",  textOutput("clv"), 
-            showcase = clv_icon
-          )
+          value_box(title = "Profit Margin", textOutput("profit_margin"), 
+                    showcase = profit_margin_icon),
+          value_box(title = "Total Profit", textOutput("profit"), 
+                    showcase = profit_icon),
+          value_box(title = "Customer Lifetime Value", textOutput("clv"), 
+                    showcase = clv_icon)
         ),
         plotOutput("money_plot",height=PLOT_HEIGHT),
-        layout_columns(
-          plotOutput("profit_over_time",height=PLOT_HEIGHT),
-          plotOutput("location_plot")
+        layout_columns(plotOutput("profit_over_time",height=PLOT_HEIGHT),
+                       plotOutput("location_plot")
         )
       )
     )
+  ),
+  tabPanel(
+    "Sales"
   )
 )
 
