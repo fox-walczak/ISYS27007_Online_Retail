@@ -48,29 +48,6 @@ calculate_profit_margin <- function(df){
             pull(invoice_amount) %>% sum(), 0.000001) * 100) %>% signif(3)
   )}
 
-
-money_label <- function(x) {
-  tryCatch({
-    o <- c()
-    for(i in 1:length(x)) {
-      abbreviation <- ""
-      if(x[i] > 1000000) {
-        o[i] <- as.integer(x[i]) / 1000000
-        abbreviation <- "M"
-      } else if(x[i] > 1000){
-        o[i] <- as.integer(x[i]) / 1000
-        abbreviation <- "K"
-      }
-      if(x[i] == 0){
-        o[i] <-- 0
-      } else {
-        o[i] <- paste(o[i],abbreviation,sep="")
-      }
-    }
-    return(o)
-  }, error=function(e){ return(x) })
-}
-
 # Get Min/Max Date
 min_date <- function(df) { return(min(dplyr::pull(df,InvoiceDate))) }
 max_date <- function(df) { return(max(dplyr::pull(df,InvoiceDate))) }
@@ -221,7 +198,7 @@ server <- function(input, output) {
     purrr::pluck(money_plots, rv$money_plot_choice)(rv$or) +
       theme_bw() +
       ylab(paste(name_of(input$aggregate_function), "(£)")) +
-      scale_y_continuous(label = money_label) +
+      scale_y_continuous(label = scales::label_number(scale_cut = scales::cut_short_scale())) +
       xlab("Date")
   })
   
@@ -235,7 +212,7 @@ server <- function(input, output) {
   output$profit_over_time <- renderPlot({
     profit_over_time(rv$or) + theme_bw() +
       ylab(paste(name_of(input$aggregate_function), "(£)")) +
-      scale_y_continuous(label = money_label) +
+      scale_y_continuous(label = scales::label_number(scale_cut = scales::cut_short_scale())) +
       xlab("Date")
   })
   
@@ -277,7 +254,7 @@ server <- function(input, output) {
     purrr::pluck(location_plots, rv$location_plot)(rv$or) +
       coord_flip() +
       theme_bw() +
-      scale_y_continuous(label = money_label) +
+      scale_y_continuous(label = scales::label_number(scale_cut = scales::cut_short_scale())) +
       ylab(paste(name_of(input$aggregate_function), "(£)")) +
       xlab("")
   })
