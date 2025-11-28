@@ -135,18 +135,15 @@ ui <- shiny::navbarPage(
       mainPanel(
         layout_columns(
           value_box( 
-            title = "Profit Margin", 
-            textOutput("profit_margin"), 
+            title = "Profit Margin",  textOutput("profit_margin"), 
             showcase = profit_margin_icon
           ),
           value_box( 
-            title = "Total Profit", 
-            textOutput("profit"), 
+            title = "Total Profit",  textOutput("profit"), 
             showcase = profit_icon
           ),
           value_box( 
-            title = "Customer Lifetime Value", 
-            textOutput("clv"), 
+            title = "Customer Lifetime Value",  textOutput("clv"), 
             showcase = clv_icon
           )
         ),
