@@ -101,12 +101,9 @@ ui <- shiny::navbarPage(
         location_selection
       ),
       mainPanel(
-        #h2("Revenue/Costs Over Time"),
         plotOutput("money_plot",height=PLOT_HEIGHT),
-        #h2("profit Over Time"),
         plotOutput("profit_over_time",height=PLOT_HEIGHT),
-        #h2("Revenue/Costs By Location"),
-        plotOutput("location_plot"),
+        plotOutput("location_plot")
       )
     )
   )
@@ -124,7 +121,8 @@ server <- function(input, output) {
     "Minimum" = min,
     "Maximum" = max
   )
-  name_of <- function(ag_fn) {if(ag_fn=="Sum"){return("Total")}else{return(ag_fn)}}
+  name_of <- function(ag_fn) {if(ag_fn == "Sum"){return("Total")}else{return(ag_fn)}}
+  name_daily <- function(ag_fn) {if(ag_fn == "Sum"){return("Total")}else{return(paste(ag_fn,"Daily"))}}
   rv <- reactiveValues()
   observe({
     rv$aggregate <- aggregate_functions %>% purrr::pluck(input$aggregate_function)
@@ -146,18 +144,18 @@ server <- function(input, output) {
     "revenue_over_time" = function(df){
       stats::aggregate(abs_invoice_amount~InvoiceDate, dplyr::filter(df, !is_cost), rv$aggregate) %>%
         ggplot(mapping=aes(x=InvoiceDate,y=abs_invoice_amount)) +
-        geom_line(colour="green") + ggtitle("Revenue Over Time")
+        geom_line(colour="green") + ggtitle(paste(name_daily(input$aggregate_function), "Revenue Over Time"))
     },
     "costs_over_time" = function(df){
       stats::aggregate(abs_invoice_amount~InvoiceDate, dplyr::filter(df, is_cost), rv$aggregate) %>%
         ggplot(mapping=aes(x=InvoiceDate,y=abs_invoice_amount)) +
-        geom_line(colour="red") + ggtitle("Costs Over Time")
+        geom_line(colour="red") + ggtitle(paste(name_daily(input$aggregate_function), "Costs Over Time"))
     },
     "money_over_time" = function(df) {
       stats::aggregate(abs_invoice_amount ~ InvoiceDate + is_cost, df, rv$aggregate) %>%
         ggplot(mapping=aes(x=InvoiceDate,y=abs_invoice_amount, colour=is_cost)) +
         scale_colour_discrete(name="Key",labels=c("Revenue","Costs"), palette=c("green","red")) +
-        geom_line() + ggtitle("Revenue and Costs Over Time")
+        geom_line() + ggtitle(paste(name_daily(input$aggregate_function),"Revenue and Costs Over Time"))
     }
   )
   
@@ -166,7 +164,8 @@ server <- function(input, output) {
   })
   output$money_plot <- renderPlot({
     purrr::pluck(money_plots, rv$money_plot_choice)(rv$or) +
-      ylab(paste(name_of(rv$aggregate), "(£)"), collapse=" ") +
+      theme_bw() +
+      ylab(paste(name_of(input$aggregate_function), "(£)")) +
       xlab("Date")
   })
   
@@ -179,31 +178,39 @@ server <- function(input, output) {
   }
   output$profit_over_time <- renderPlot({
     profit_over_time(rv$or) + theme_bw() +
-      ylab(paste(name_of(rv$aggregate), "(£)", collapse=" ")) +
+      ylab(paste(name_of(input$aggregate_function), "(£)")) +
       xlab("Date")
   })
   
   # LOCATION
+  
+  location_title <- function(type) {
+    if(input$aggregate_function == "Sum") {
+      return(ggtitle(paste(name_of(input$aggregate_function), type, "by Country")))
+    } else {
+      return(ggtitle(paste(name_of(input$aggregate_function), type, "of Transactions by Country")))
+    }
+  }
   
   location_plots <- list(
     "revenue_by_location" = function(df) {
       stats::aggregate(abs_invoice_amount~Country, dplyr::filter(df, !is_cost), rv$aggregate) %>%
         sort_by(~abs_invoice_amount,decreasing=TRUE) %>%
         ggplot(mapping=aes(x=fct_reorder(Country, abs_invoice_amount),y=abs_invoice_amount)) +
-        geom_col(fill="green") + ggtitle(paste(name_of(rv$aggregate), "Revenue by Country", collapse=" "))
+        geom_col(fill="green") + location_title("Revenue")
     },
     "costs_by_location" = function(df) {
       stats::aggregate(abs_invoice_amount~Country, dplyr::filter(df, is_cost), rv$aggregate) %>%
         sort_by(~abs_invoice_amount,decreasing=TRUE) %>%
         ggplot(mapping=aes(x=fct_reorder(Country, abs_invoice_amount),y=abs_invoice_amount)) +
-        geom_col(fill="red") + ggtitle(paste(name_of(rv$aggregate), "Costs by Country", collapse=" "))
+        geom_col(fill="red") + location_title("Costs")
     },
     "money_by_location" = function(df) {
       stats::aggregate(abs_invoice_amount ~ Country + is_cost, df, rv$aggregate) %>%
         sort_by(~abs_invoice_amount,decreasing=TRUE) %>%
         ggplot(mapping=aes(x=fct_reorder(Country, abs_invoice_amount),y=abs_invoice_amount, fill=is_cost)) +
         scale_fill_discrete(name="Key",labels=c("Revenue","Costs"), palette=c("green","red")) +
-        geom_col(position=position_dodge(preserve="single")) + ggtitle(paste(name_of(rv$aggregate), "Revenue/Costs by Country",collapse=" "))
+        geom_col(position=position_dodge(preserve="single")) + location_title("Revenue and Costs")
     }
   )
   observe({
@@ -214,7 +221,7 @@ server <- function(input, output) {
       theme(axis.text.x = element_text(angle=90, vjust=.5, hjust=1)) +
       coord_flip() +
       theme_bw() +
-      ylab(paste(name_of(rv$aggregate), "(£)"),collapse=" ") +
+      ylab(paste(name_of(input$aggregate_function), "(£)")) +
       xlab("")
   })
   
