@@ -56,6 +56,15 @@ calculate_clv <- function(df) {
       mean()
   )
 }
+calculate_aov <- function(df) {
+  return(
+    df %>%
+      filter(Quantity > 0 & UnitPrice > 0) %>%
+      aggregate(invoice_amount ~ InvoiceNo, ., sum) %>%
+      pull(invoice_amount) %>%
+      mean()
+  )
+}
 
 # Get Min/Max Date
 min_date <- function(df) { return(min(dplyr::pull(df,InvoiceDate))) }
@@ -111,6 +120,9 @@ profit_margin_icon <- HTML('<svg xmlns="http://www.w3.org/2000/svg" width=50% fi
 # From https://icons.getbootstrap.com/icons/currency-pound/
 profit_icon <- HTML('<svg xmlns="http://www.w3.org/2000/svg" width=50% fill="currentColor" class="bi bi-currency-pound" viewBox="0 0 16 16"> <path d="M4 8.585h1.969c.115.465.186.939.186 1.43 0 1.385-.736 2.496-2.075 2.771V14H12v-1.24H6.492v-.129c.825-.525 1.135-1.446 1.135-2.694 0-.465-.07-.913-.168-1.352h3.29v-.972H7.22c-.186-.723-.372-1.455-.372-2.247 0-1.274 1.047-2.066 2.58-2.066a5.3 5.3 0 0 1 2.103.465V2.456A5.6 5.6 0 0 0 9.348 2C6.865 2 5.322 3.291 5.322 5.366c0 .775.195 1.515.399 2.247H4z"/> </svg>')
 
+# From https://icons.getbootstrap.com/icons/currency-pound/
+aov_icon <- HTML('<svg xmlns="http://www.w3.org/2000/svg" height=100% fill="currentColor" class="bi bi-currency-pound" viewBox="0 0 16 16"> <path d="M4 8.585h1.969c.115.465.186.939.186 1.43 0 1.385-.736 2.496-2.075 2.771V14H12v-1.24H6.492v-.129c.825-.525 1.135-1.446 1.135-2.694 0-.465-.07-.913-.168-1.352h3.29v-.972H7.22c-.186-.723-.372-1.455-.372-2.247 0-1.274 1.047-2.066 2.58-2.066a5.3 5.3 0 0 1 2.103.465V2.456A5.6 5.6 0 0 0 9.348 2C6.865 2 5.322 3.291 5.322 5.366c0 .775.195 1.515.399 2.247H4z"/> </svg>')
+
 # From https://icons.getbootstrap.com/icons/person/
 clv_icon <- HTML('<svg xmlns="http://www.w3.org/2000/svg" width=50% fill="currentColor" class="bi bi-person" viewBox="0 0 16 16">
   <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0m4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4m-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10s-3.516.68-4.168 1.332c-.678.678-.83 1.418-.832 1.664z"/>
@@ -149,11 +161,15 @@ ui <- shiny::navbarPage(
   tabPanel(
     "Sales",
     sidebarLayout(
-      sidebarPanel(accordion(
+      sidebarPanel(width=3, accordion(
         accordion_panel("Date Range", date_slider("sales.date_range")),
         accordion_panel("Select Countries", location_selection("sales.locations"))
       )),
       mainPanel(
+        layout_columns(
+          value_box(title = "Average Order Value", textOutput("aov"), 
+                    showcase = aov_icon)
+        ),
         plotOutput("sales.quantity_over_time")
       )
     ),
@@ -187,6 +203,9 @@ server <- function(input, output) {
   
   #----------------------- OUTPUTS ---------------------------------------------
   # ----KPIs----
+  format_currency <- function(x) {
+    return(format(signif(x, 3), big.mark=","))
+  }
   text_error <- function(e) {
     if(conditionMessage(e)=="no rows to aggregate") {
       return("0")
@@ -195,14 +214,19 @@ server <- function(input, output) {
     }
   }
   output$profit <- renderText({
-    format(signif(calculate_profit(rv$or),3), big.mark=",")
+    format_currency(calculate_profit(rv$or))
   })
   output$profit_margin <- renderText({
     signif(calculate_profit_margin(rv$or), 3)
   })
   output$clv <- renderText({
     tryCatch({
-    format(signif(calculate_clv(rv$or),3), big.mark=",")
+    paste("£", format_currency(calculate_clv(rv$or)),sep="")
+      },error=text_error)
+  })
+  output$aov <- renderText({
+    tryCatch({
+    format_currency(calculate_aov(sales$or))
       },error=text_error)
   })
   output$test <- renderText({
