@@ -56,14 +56,14 @@ PLOT_HEIGHT <- "200px"
 money_plot_choice_selection <-
   shiny::checkboxGroupInput(
     inputId = "money_plot_choice",
-    label   = "Show:",
+    label=NULL,
     choiceNames = c("Revenue", "Costs"),
     choiceValues = c(1, 2)
   )
 date_slider <-
   shiny::sliderInput(
     inputId="date_range",
-    label="Date Range",
+    label=NULL,
     min=min_date(online_retail),
     max=max_date(online_retail),
     value=c(min_date(online_retail), max_date(online_retail)),
@@ -74,14 +74,14 @@ date_slider <-
 aggregate_function_selection <-
   shiny::selectInput(
     inputId="aggregate_function",
-    label="Aggregate Function:",
+    label=NULL,
     choices=c("Sum","Mean","Median","Minimum","Maximum"),
     selected="Sum"
   )
 location_selection <-
   shiny::checkboxGroupInput(
     inputId = "locations",
-    label   = "Select Countries:",
+    label=NULL,
     choices = sort(unique(online_retail$Country))
   )
 
@@ -93,12 +93,13 @@ ui <- shiny::navbarPage(
     title = "Bundle and Promote",
     sidebarLayout(
       sidebarPanel(
-        h3("Filters"),
         width = 3,
-        money_plot_choice_selection,
-        date_slider,
-        aggregate_function_selection,
-        location_selection
+        accordion(open=c("Show...", "Aggregate Function", "Date Range"), multiple=TRUE,
+                  accordion_panel( "Show...", money_plot_choice_selection ),
+                  accordion_panel( "Aggregate Function", aggregate_function_selection ),
+                  accordion_panel( "Date Range", date_slider ),
+                  accordion_panel( "Select Countries", location_selection )
+        )
       ),
       mainPanel(
         plotOutput("money_plot",height=PLOT_HEIGHT),
