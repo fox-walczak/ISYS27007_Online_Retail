@@ -183,8 +183,14 @@ server <- function(input, output) {
   })
   
   #----------------------- OUTPUTS ---------------------------------------------
-  
-  # KPIs
+  # ----KPIs----
+  text_error <- function(e) {
+    if(conditionMessage(e)=="no rows to aggregate") {
+      return("0")
+    } else {
+      return(OTHER_ERROR)
+    }
+  }
   output$profit <- renderText({
     format(signif(calculate_profit(rv$or),3), big.mark=",")
   })
@@ -192,11 +198,25 @@ server <- function(input, output) {
     signif(calculate_profit_margin(rv$or), 3)
   })
   output$clv <- renderText({
+    tryCatch({
     format(signif(calculate_clv(rv$or),3), big.mark=",")
+      },error=text_error)
   })
   output$test <- renderText({
     paste(input$locations)
   })
+  
+  # ----PLOTS----
+  
+  NO_DATA <- "No data for the selected filters."
+  OTHER_ERROR <- "An error occurred."
+  plot_error <- function(e) {
+    if(conditionMessage(e)=="no rows to aggregate") {
+      return(ggplot() + ggtitle(NO_DATA) + theme_bw())
+    } else {
+      return(ggplot() + ggtitle(OTHER_ERROR) + theme_bw())
+    }
+  }
   
   # REVENUE / COST
   
@@ -223,11 +243,13 @@ server <- function(input, output) {
     rv$money_plot_choice <- money_plot_choices[sum(as.integer(input$money_plot_choice)) %% 3 + 1]
   })
   output$money_plot <- renderPlot({
+    tryCatch({
     purrr::pluck(money_plots, rv$money_plot_choice)(rv$or) +
       theme_bw() +
       ylab(paste(name_of(input$aggregate_function), "(£)")) +
       scale_y_continuous(label = scales::label_number(scale_cut = scales::cut_short_scale())) +
       xlab("Date")
+      },error=plot_error)
   })
   
   # PROFIT
@@ -238,11 +260,12 @@ server <- function(input, output) {
       geom_line(colour="#2c3e50") + ggtitle(paste(name_of(input$aggregate_function), "Daily Profit"))
   }
   output$profit_over_time <- renderPlot({
+    tryCatch({
     profit_over_time(rv$or) + theme_bw() +
       ylab(paste(name_of(input$aggregate_function), "(£)")) +
       scale_y_continuous(label = scales::label_number(scale_cut = scales::cut_short_scale())) +
       xlab("Date")
-  })
+  },error=plot_error)})
   
   # LOCATION
   
@@ -279,12 +302,15 @@ server <- function(input, output) {
     rv$location_plot <- location_plot_choices[sum(as.integer(input$money_plot_choice)) %% 3 + 1]
   })
   output$location_plot <- renderPlot({
+    tryCatch({
     purrr::pluck(location_plots, rv$location_plot)(rv$or) +
       coord_flip() +
       theme_bw() +
       scale_y_continuous(label = scales::label_number(scale_cut = scales::cut_short_scale())) +
       ylab(paste(name_of(input$aggregate_function), "(£)")) +
       xlab("")
+    },
+    error=plot_error)
   })
 }
 
